@@ -43,45 +43,7 @@ namespace HCP.Requests
         public GetElementAttributeRequest(JSONClass json) : base(json)
         {
         }
-
-        public static string GetClassName(Element element)
-        {
-            var textComponent = element.GetComponent<UnityEngine.UI.Text>();
-            var canvasComponent = element.GetComponent<UnityEngine.Canvas>();
-            var buttonComponent = element.GetComponent<UnityEngine.UI.Button>();
-            var toggleComponent = element.GetComponent<UnityEngine.UI.Toggle>();
-            var dropdownComponent = element.GetComponent<UnityEngine.UI.Dropdown>();
-            var inputComponent = element.GetComponent <UnityEngine.UI.InputField>();
-
-            if (canvasComponent != null)
-            {
-                return (canvasComponent.GetType().FullName);
-            }
-            else if (textComponent != null)
-            {
-                return (textComponent.GetType().FullName);
-            }
-            else if (buttonComponent != null)
-            {
-                return (buttonComponent.GetType().FullName);
-            }
-            else if (toggleComponent != null)
-            {
-                return (toggleComponent.GetType().FullName);
-            }
-            else if (dropdownComponent != null)
-            {
-                return (dropdownComponent.GetType().FullName);
-            }
-            else if (inputComponent != null)
-            {
-                return (inputComponent.GetType().FullName);
-            }
-            else
-            {
-                return (element.GetType().FullName);
-            }
-        }
+		
 
         public override JobResponse Process()
         {
@@ -91,32 +53,19 @@ namespace HCP.Requests
             switch (this.Attribute)
             {
                 case EAttribute.NAME:
-                    response = element.gameObject.name;
+                    response = Element.GetName(element);
                     break;
                 case EAttribute.CLASSNAME:
-                    response = GetClassName(element);
+                    response = Element.GetClassName(element);
                     break;
                 case EAttribute.DISPLAYED:
-                    {
-                        UnityEngine.Vector3 point = GetElementLocationRequest.GetLocation(element);
-                        UnityEngine.Vector3 size = GetElementSizeRequest.GetSize(element);
-
-                        if (point.y < 0 || point.y + size.y > UnityEngine.Screen.height ||
-                            point.x < 0 || point.x + size.x > UnityEngine.Screen.width)
-                        {
-                            response = "false";
-                        }
-                        else
-                        {
-                            response = element.gameObject.activeInHierarchy ? "true" : "false";
-                        }
-                    }
-                    break;
+					response = Element.DetermineDisplayed(element) ? "true" : "false";
+					break;
                 case EAttribute.ENABLED:
-                    response = element.gameObject.activeSelf ? "true" : "false";
+					response = Element.GetEnabled(element) ? "true" : "false";
                     break;
                 case EAttribute.SELECTED:
-                    response = (element.gameObject == EventSystem.current.currentSelectedGameObject) ? "true" : "false";
+					response = Element.GetSelected(element) ? "true" : "false";
                     break;
             }
 

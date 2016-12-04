@@ -217,8 +217,6 @@ namespace HCP
 
             foreach (PropertyInfo prop in props)
             {
-                object propValue = prop.GetValue(data, null);
-
                 c.Add(prop.Name, prop.GetValue(data, null).ToString());
             }
 
@@ -242,8 +240,6 @@ namespace HCP
 
                 foreach (PropertyInfo prop in props)
                 {
-                    object propValue = prop.GetValue(formattedItem, null);
-
                     n.Add(prop.Name, prop.GetValue(formattedItem, null).ToString());
                 }
                 a.Add(n);

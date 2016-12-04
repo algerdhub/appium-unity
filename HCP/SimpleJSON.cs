@@ -47,8 +47,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
- 
- 
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace HCP.SimpleJSON
 {
     public enum JSONBinaryTag
@@ -124,7 +125,7 @@ namespace HCP.SimpleJSON
 			return "JSONNode";
 		}
  
-		public abstract string ToJSON (int prefix);
+		public abstract StringBuilder ToJSON (int prefix, StringBuilder builder = null);
  
 		#endregion common interface
  
@@ -246,35 +247,11 @@ namespace HCP.SimpleJSON
  
 		internal static string Escape (string aText)
 		{
-			string result = "";
-			foreach (char c in aText) {
-				switch (c) {
-					case '\\':
-						result += "\\\\";
-						break;
-					case '\"':
-						result += "\\\"";
-						break;
-					case '\n':
-						result += "\\n";
-						break;
-					case '\r':
-						result += "\\r";
-						break;
-					case '\t':
-						result += "\\t";
-						break;
-					case '\b':
-						result += "\\b";
-						break;
-					case '\f':
-						result += "\\f";
-						break;
-					default   :
-						result += c;
-						break;
-				}
-			}
+			string pattern = "([\\|\"|\n|\r|\t|\b|\f])";
+			string replacement = "\\$1";
+			Regex rgx = new Regex(pattern);
+			string result = rgx.Replace(aText, replacement);
+			
 			return result;
 		}
  
@@ -768,19 +745,21 @@ namespace HCP.SimpleJSON
 			return result;
 		}
  
-		public override string ToJSON (int prefix)
+		public override StringBuilder ToJSON (int prefix, StringBuilder builder = null)
 		{
+			if(builder == null) builder = new StringBuilder(4096);
+
 			string s = new string (' ', (prefix + 1) * 2);
-			string ret = "[ ";
+			builder.Append("[ ");
 			foreach (JSONNode n in m_List) {
-				if (ret.Length > 3)
-					ret += ", ";
-				ret += "\n" + s;
-				ret += n.ToJSON (prefix + 1);
+				if (n != m_List[0])
+					builder.Append(", ");
+				builder.Append("\n" + s);
+				n.ToJSON (prefix + 1, builder);
  
 			}
-			ret += "\n" + s + "]";
-			return ret;
+			builder.Append("\n" + s + "]");
+			return builder;
 		}
  
 		public override void Serialize (System.IO.BinaryWriter aWriter)
@@ -914,18 +893,21 @@ namespace HCP.SimpleJSON
 			return result;
 		}
  
-		public override string ToJSON (int prefix)
+		public override StringBuilder ToJSON (int prefix, StringBuilder builder = null)
 		{
+			if(builder == null) builder = new StringBuilder(4096);
+
 			string s = new string (' ', (prefix + 1) * 2);
-			string ret = "{ ";
+			builder.Append("{ ");
 			foreach (KeyValuePair<string,JSONNode> n in m_Dict) {
-				if (ret.Length > 3)
-					ret += ", ";
-				ret += "\n" + s;
-				ret += string.Format ("\"{0}\": {1}", n.Key, n.Value.ToJSON (prefix + 1));
+				if (builder.Length > 3)
+					builder.Append(", ");
+				builder.Append("\n" + s);
+				builder.AppendFormat("\"{0}\": ", n.Key);
+				n.Value.ToJSON (prefix + 1, builder);
 			}
-			ret += "\n" + s + "}";
-			return ret;
+			builder.Append("\n" + s + "}");
+			return builder;
 		}
  
 		public override void Serialize (System.IO.BinaryWriter aWriter)
@@ -990,18 +972,24 @@ namespace HCP.SimpleJSON
 			return "\"" + Escape (m_Data) + "\"";
 		}
  
-		public override string ToJSON (int prefix)
+		public override StringBuilder ToJSON (int prefix, StringBuilder builder = null)
 		{
+			if(builder == null) builder = new StringBuilder(4096);
+
 			switch (Tag) {
 				case JSONBinaryTag.DoubleValue:
 				case JSONBinaryTag.FloatValue:
 				case JSONBinaryTag.IntValue:
-					return m_Data;
+					builder.Append(m_Data);
+					break;
 				case JSONBinaryTag.Value:
-					return string.Format ("\"{0}\"", Escape (m_Data));
+					builder.AppendFormat("\"{0}\"", Escape (m_Data));
+					break;
 				default:
 					throw new NotSupportedException ("This shouldn't be here: " + Tag.ToString ());
 			}
+
+			return builder;
 		}
  
 		public override void Serialize (System.IO.BinaryWriter aWriter)
@@ -1138,9 +1126,9 @@ namespace HCP.SimpleJSON
 			return "";
 		}
  
-		public override string ToJSON (int prefix)
+		public override StringBuilder ToJSON (int prefix, StringBuilder builder = null)
 		{
-			return "";
+			return null;
 		}
  
 		public override int AsInt

@@ -16,17 +16,17 @@ namespace HCP.Requests
         public GetElementLocationRequest(JSONClass json) : base(json)
         {
         }
-
-        public static Vector3 GetLocation(Element element)
-		{
-			Rect screenRect = element.GetScreenRect();
-			return new Vector3(screenRect.min.x, screenRect.min.y, 0.0f);
-        }
-
+		
         public override JobResponse Process()
         {
             var element = JobRequest.GetElementById(this.Id);
-            Vector3 point = GetLocation(element);
+			var rect = Element.ConstructScreenRect(element);
+            Vector3 point = new Vector3()
+			{
+				x = rect.x,
+				y = rect.y,
+				z = 0
+			};
 
             return Responses.JSONResponse.FromObject(new { x = (int)point.x, y = (int)point.y, z = (int)point.z });
                 // Note that appium has no concept of z, but passing it anyways

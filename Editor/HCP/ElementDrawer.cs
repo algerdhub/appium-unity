@@ -22,7 +22,7 @@ using System;																	// String / Math 	(ref http://msdn.microsoft.com/e
 /// @brief	UniqueIdDrawer class.  For custom rendering of
 /// UniqueId component.  
 //////////////////////////////////////////////////////////////////////////
-[CustomPropertyDrawer (typeof(HCP.ElementAttribute))]
+[CustomPropertyDrawer (typeof(HCP.StickyAttribute))]
 public class ElementDrawer : PropertyDrawer
 {
 	/***************************** PUBLIC METHODS ***************************/

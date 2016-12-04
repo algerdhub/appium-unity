@@ -32,10 +32,67 @@ namespace HCP
 
         public abstract JobResponse Process();
 
-        #region Utility
-        protected static Element GetElementById(string id)
+		#region Utility
+		protected static Dictionary<string, Component>	s_touchedElements = new Dictionary<string, Component>();
+
+		protected static string ConstructElementId(Component c)
+		{
+			var g = c.gameObject;
+			string instanceId = null;
+			
+			var sticky = g.GetComponent<Sticky>();
+			if(sticky)
+				// Overwrite id with element string
+			{
+				instanceId = String.Format("%0:%1", sticky.Id, c.GetType().Name);
+			}
+			else
+			{
+				instanceId = c.GetInstanceID().ToString();
+			}
+			
+			return instanceId;
+		}
+
+		protected static void RegisterElement(string id, Component c)
+		{
+			if(s_touchedElements.ContainsKey(id))
+				s_touchedElements[id] = c;
+			else
+				s_touchedElements.Add(id, c);
+		}
+
+        protected static Component GetElementById(string id)
         {
-            return Resources.FindObjectsOfTypeAll<Element>().First(e => e.Id == id);
+			Component e = null;
+
+			// First look it up in our registrations
+			if(s_touchedElements.ContainsKey(id))
+			{
+				e = s_touchedElements[id];
+			}
+			else
+			{
+				// Search
+				bool isSticky = ElementId.IsSticky(id);
+
+				if(isSticky)
+				{
+					var objectPart = ElementId.ObjectPart(id);
+					var componentPart = ElementId.ComponentPart(id);
+					var sticky = Resources.FindObjectsOfTypeAll<Sticky>().First(s => s.Id == objectPart);
+					e = sticky.GetComponent(Type.GetType(componentPart));
+				}
+				else
+				{
+					var intId = int.Parse(id);
+					e = Resources.FindObjectsOfTypeAll<Component>().First(c => c.GetInstanceID() == intId);
+				}
+
+				RegisterElement(id, e);
+			}
+
+			return e;
         }
         #endregion
     }

@@ -20,7 +20,7 @@ namespace HCP.Requests
 
         public override JobResponse Process()
         {
-            var server = GameObject.FindObjectOfType<HCP.Server>();
+            var server = GameObject.FindObjectOfType<Server>();
 
             var ptr = new PointerEventData(EventSystem.current);
             ptr.position = ptr.pressPosition = new Vector2(X, Y);

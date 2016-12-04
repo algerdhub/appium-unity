@@ -54,7 +54,6 @@ namespace HCP
                 {
                     State = EState.COMPLETE;
                     Response.Status = JobResponse.EStatus.Success;
-                    m_processReset.Set();
                 }
             }
             catch(Exception e)
@@ -65,12 +64,12 @@ namespace HCP
             }
             finally
             {
+                m_processReset.Set();
             }
         }
 
         public void Dispose()
         {
-            this.m_processReset.Set();
             this.m_processReset.Close();
         }
     }

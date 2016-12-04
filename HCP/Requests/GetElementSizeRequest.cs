@@ -16,17 +16,16 @@ namespace HCP.Requests
         public GetElementSizeRequest (JSONClass json) : base (json)
         {
         }
-
-        public static Vector3 GetSize (Element element)
-        {
-			Rect screenRect = element.GetScreenRect();
-			return new Vector3(screenRect.size.x, screenRect.size.y, 0.0f);
-        }
-
         public override JobResponse Process ()
         {
             var element = JobRequest.GetElementById (this.Id);
-            Vector3 size = GetSize (element);
+			var rect = Element.ConstructScreenRect(element);
+            Vector3 size = new Vector3()
+			{
+				x = rect.width,
+				y = rect.height,
+				z = 0
+			};
 
             return Responses.JSONResponse.FromObject (new { width = (int)size.x, height = (int)size.y, depth = (int)size.z });
             // Note that appium has no concept of depth, but passing it anyways
