@@ -899,9 +899,11 @@ namespace HCP.SimpleJSON
 
 			string s = new string (' ', (prefix + 1) * 2);
 			builder.Append("{ ");
+			int i = 0;
 			foreach (KeyValuePair<string,JSONNode> n in m_Dict) {
-				if (builder.Length > 3)
+				if (i != 0)
 					builder.Append(", ");
+				i++;
 				builder.Append("\n" + s);
 				builder.AppendFormat("\"{0}\": ", n.Key);
 				n.Value.ToJSON (prefix + 1, builder);

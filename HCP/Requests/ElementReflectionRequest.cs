@@ -22,7 +22,7 @@ namespace HCP.Requests
         {
             get
             {
-                var stringValue = Data["attribute"];
+                var stringValue = Data["type"];
 
                 switch (stringValue)
                 {

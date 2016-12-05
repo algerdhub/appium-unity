@@ -65,7 +65,7 @@ namespace HCP
 
 			if(element is UnityEngine.Transform == false)
 			{
-				path =  path + "|";
+				path =  path + ":";
 
 				string elementTypeName = element.GetType().Name;
 				if(elementTypeName.Equals(element.name) == false)
@@ -141,8 +141,8 @@ namespace HCP
 		{
 			UnityEngine.Rect rect = Element.ConstructScreenRect(element);
 
-            if (rect.y < 0 || rect.y + rect.y > UnityEngine.Screen.height ||
-                rect.x < 0 || rect.x + rect.x > UnityEngine.Screen.width)
+            if (rect.y < 0 || rect.y + rect.height > UnityEngine.Screen.height ||
+                rect.x < 0 || rect.x + rect.width > UnityEngine.Screen.width)
             {
                 return false;
             }
@@ -168,7 +168,7 @@ namespace HCP
 	{
 		public static string ObjectPart(string id)
 		{
-			var groups = Regex.Match(id, "([^|]+)").Groups;
+			var groups = Regex.Match(id, "([^:]+)").Groups;
 			return groups.Count > 1 ? groups[1].Value : null;
 		}
 
@@ -185,8 +185,8 @@ namespace HCP
 		/// <returns></returns>
 		public static string ComponentPart(string id)
 		{
-			var groups = Regex.Match(id, ".*|([^\\[]+)").Groups;
-			return groups.Count > 1 ? groups[1].Value : (HasComponentPart(id) ? ObjectPart(id) : "Transform");
+			var groups = Regex.Match(id, ".*:([^\\[]+)").Groups;
+			return groups.Count > 1 && String.IsNullOrEmpty(groups[1].Value) == false ? groups[1].Value : (HasComponentPart(id) ? ObjectPart(id) : "Transform");
 		}
 
 		public static bool IsSticky(string id)
@@ -196,7 +196,7 @@ namespace HCP
 
 		public static bool HasComponentPart(string id)
 		{
-			return id.Contains("|"); // component separator
+			return id.Contains(":"); // component separator
 		}
     }
 }

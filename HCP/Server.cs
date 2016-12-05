@@ -333,8 +333,6 @@ namespace HCP
 
 			// Prepare request listener
 			m_listener = new HttpListener ();
-			m_listener.Prefixes.Add (this.ListenerURI + "/alive");
-			m_listener.Prefixes.Add (this.ListenerURI + "/action");
 			m_listener.Prefixes.Add (this.ListenerURI + "/alive/");
 			m_listener.Prefixes.Add (this.ListenerURI + "/action/");
 			//m_listener.IgnoreWriteExceptions = true;						// Stops "System.Net.Sockets.SocketException: The socket has been shut down"
