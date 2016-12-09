@@ -43,13 +43,22 @@ namespace HCP.Requests
 		/// A list of which types are excluded from interets when building
 		/// a pagesource.  A gameobject is added to pagesource if it has
 		/// something of interest.  By default we think every type is
-		/// interesting
+		/// interesting in the accepted namespaces
 		/// </summary>
 		protected static List<Type> s_uninterestingTypes = new List<Type>()
 		{
 			typeof(UnityEngine.Transform),
 			typeof(UnityEngine.RectTransform),
 			typeof(UnityEngine.Renderer),
+		};
+
+		/// <summary>
+		/// A list of which types are included despite namespace
+		/// </summary>
+		protected static List<Type> s_interestingTypes = new List<Type>()
+		{
+			typeof(UnityEngine.Canvas),
+			typeof(UnityEngine.CanvasGroup),
 		};
 
 		/// <summary>
@@ -60,7 +69,8 @@ namespace HCP.Requests
 		protected static List<string> s_namespaceInterests = new List<string>()
 		{
 			"UnityEngine.UI",
-			null
+			// removing game namespaces for now --- uncomment to see stuff like AppiumServer etc     
+			//null
 		};
 		
 		/// <summary>
@@ -115,6 +125,7 @@ namespace HCP.Requests
 		/// <summary>
 		/// Recursively goes through a gameobject and adds it to the tree if it has one or more components that are
 		/// interesting
+		/// Pagesource currently returns gameobject lists - however please note that HCP is component based
 		/// </summary>
 		/// <param name="gameObject"></param>
 		/// <param name="xmlDoc"></param>
@@ -124,12 +135,17 @@ namespace HCP.Requests
         {
 			var xmlElement = parentXmlElement;
 
-			var components = gameObject.GetComponents<Component>();
+			var components = gameObject.GetComponents<Behaviour>().Where(c => c != null);
 			var componentTypes = components.Select(c => c.GetType());
 			var transform = gameObject.GetComponent<Transform>();
 			
+			Func<Behaviour, bool> interestTest = (c) =>
+				c != null &&
+				(s_namespaceInterests.Contains(c.GetType().Namespace) || s_interestingTypes.Contains(c.GetType())) && 
+				s_uninterestingTypes.Contains(c.GetType()) == false;
+
 			var interests = components
-					.Where(c => s_namespaceInterests.Contains(c.GetType().Namespace) && s_uninterestingTypes.Contains(c.GetType()) == false);
+					.Where(interestTest);
             
 			if(interests.Any())
 				// This gameObject has some interesting stuff
@@ -141,12 +157,13 @@ namespace HCP.Requests
 				childXmlElement.SetAttribute("package", "UnityEngine.GameObject");
 				childXmlElement.SetAttribute("isHCP", "true");
 				childXmlElement.SetAttribute("name", gameObject.name);
-				childXmlElement.SetAttribute("path", Element.ConstructXPath(transform));
+				childXmlElement.SetAttribute("xpath", Element.ConstructXPath(transform));
 				childXmlElement.SetAttribute("index", index.ToString());
 				childXmlElement.SetAttribute("resource-id", PageSourceRequest.ConstructElementId(gameObject));
 				childXmlElement.SetAttribute("enabled", gameObject.activeSelf ? "true" : "false");
 				childXmlElement.SetAttribute("displayed", gameObject.activeInHierarchy ? "true" : "false");
 
+				
 				// Bounds
 				var rect = Element.ConstructScreenRect(transform);
 				childXmlElement.SetAttribute("bounds", String.Format("[{0},{1}][{2},{3}]", (int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height));
@@ -155,30 +172,42 @@ namespace HCP.Requests
 				childXmlElement.SetAttribute ("clickable", componentTypes.Any(t => s_clickableTypes.Contains(t)) ? "true" : "false");
 			
 				// Checkable?
-				childXmlElement.SetAttribute ("checkable", componentTypes.Any(t => s_clickableTypes.Contains(t)) ? "true" : "false");
+				childXmlElement.SetAttribute ("checkable", componentTypes.Any(t => s_checkableTypes.Contains(t)) ? "true" : "false");
 
 				// Complete components list (for future use)
+				// To be used to see what is interesting in this gameboject
+				/*
 				childXmlElement.SetAttribute("components", 
 					interests
 						.Select(c => Element.GetName(c))
-						.ToString());
-				
+						.Join();
+				*/
 
 				parentXmlElement.AppendChild(childXmlElement);
                 xmlElement = childXmlElement;
 				
 
 				// Walk components (not implemented)
+				// To provide component based pagesource
+				/*
 				interests
 					.ToList()
 					.ForEach(c => CompleteComponent(c, xmlDoc, childXmlElement));
+				*/
 			}
 
 			// Walk gameObjects
             for(int i = 0; i < gameObject.transform.childCount; i++)
             {
                 var child = gameObject.transform.GetChild(i);
-                CompleteChild(child.gameObject, xmlDoc, xmlElement, i);
+				if(child.GetComponentsInChildren<Behaviour>()
+					.Where(interestTest)
+					.Any())
+					// An optimization to only traverse lists that have something of
+					// interest somewhere down the line.
+				{
+					CompleteChild(child.gameObject, xmlDoc, xmlElement, i);
+				}
             }
         }
 
@@ -190,12 +219,13 @@ namespace HCP.Requests
             XmlElement xmlElement = xmlDoc.CreateElement("hierarchy");
             xmlDoc.AppendChild(xmlElement);
 
-            GameObject[] roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+			GameObject[] roots = GameObject.FindObjectsOfType<GameObject>().Where(g => g.transform.parent == null).ToArray();
 
-            for(int i = 0; i < roots.Length; i++)
-            {
-                CompleteChild(roots[i].gameObject, xmlDoc, xmlElement, i);
-            }
+			for(int i = 0; i < roots.Length; i++)
+			{
+				CompleteChild(roots[i].gameObject, xmlDoc, xmlElement, i);
+			}	
+
             
             using (var stringWriter = new StringWriter())
             using (var xmlTextWriter = XmlWriter.Create(stringWriter))
@@ -203,7 +233,8 @@ namespace HCP.Requests
                 xmlDoc.WriteTo(xmlTextWriter);
                 xmlTextWriter.Flush();
                 return new Responses.StringResponse(stringWriter.GetStringBuilder().ToString());
-            }			
+            }	
+            	
         }
     }
 }
